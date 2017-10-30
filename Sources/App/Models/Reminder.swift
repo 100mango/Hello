@@ -12,21 +12,25 @@ final class Reminder: Model {
     
     let title: String
     let description: String
+    let userId: Identifier?
     
-    init(title: String, description: String) {
+    init(title: String, description: String, user: User) {
         self.title = title
         self.description = description
+        self.userId = user.id
     }
     
     init(row: Row) throws {
         title = try row.get("title")
         description = try row.get("description")
+        userId = try row.get(User.foreignIdKey)
     }
     
     func makeRow() throws -> Row {
         var row = Row()
         try row.set("title", title)
         try row.set("description", description)
+        try row.set(User.foreignIdKey, userId)
         return row
     }
 }
@@ -37,6 +41,7 @@ extension Reminder: Preparation {
             builder.id()
             builder.string("title")
             builder.string("description")
+            builder.parent(User.self)
         }
     }
     
@@ -45,10 +50,27 @@ extension Reminder: Preparation {
     }
 }
 
+extension Reminder {
+    var user: Parent<Reminder, User> {
+        return parent(id: userId)
+    }
+}
+
+extension Reminder {
+    var categories: Siblings<Reminder, Category, Pivot<Reminder, Category>> {
+        return siblings()
+    }
+}
 
 extension Reminder: JSONConvertible {
     convenience init(json: JSON) throws {
-        try self.init(title: json.get("title"), description: json.get("description"))
+        let userId: Identifier = try json.get("user_id")
+        guard let user = try User.find(userId) else {
+            var error = Abort.notFound
+            error.reason = "userid:\(userId) not found in database"
+            throw error
+        }
+        try self.init(title: json.get("title"), description: json.get("description"), user: user)
     }
     
     func makeJSON() throws -> JSON {
@@ -56,6 +78,7 @@ extension Reminder: JSONConvertible {
         try json.set("id", id)
         try json.set("title", title)
         try json.set("description", description)
+        try json.set("user_id", userId)
         return json
     }
 }
