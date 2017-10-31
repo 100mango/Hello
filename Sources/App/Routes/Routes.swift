@@ -9,5 +9,8 @@ extension Droplet {
         let categoriesController = CategoriesController()
         categoriesController.addRoutes(to: self)
         
+        get("lily") { req in
+            return "I love you"
+        }
     }
 }
