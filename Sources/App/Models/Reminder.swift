@@ -66,9 +66,7 @@ extension Reminder: JSONConvertible {
     convenience init(json: JSON) throws {
         let userId: Identifier = try json.get("user_id")
         guard let user = try User.find(userId) else {
-            var error = Abort.notFound
-            error.reason = "userid:\(userId) not found in database"
-            throw error
+            throw Abort.notFound
         }
         try self.init(title: json.get("title"), description: json.get("description"), user: user)
     }
